@@ -89,4 +89,5 @@ scaleDown
 flushRedisPod
 scaleUp
 
-echo "End Of Script. Task Complete."
+echo "Task Complete."
+#EndOfScript-RB185114

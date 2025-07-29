@@ -26,24 +26,27 @@ if [ -f /etc/systemd/system/k3s.service ]; then
 	export K3S_KUBECONFIG_MODE="644"
 	echo -e "External IP \033[32m $EXTERNAL_IP\033[0m Detected..."
 
-
-	echo "Locating the node-external-ip line in k3s.service file..."
-	node_ip_lineNum=$(grep -n "node-external-ip" /etc/systemd/system/k3s.service| cut -d: -f1)
-
-	echo "Updating..."
-	sed_delete_directive=d
-	sed_append_directive=a
-	sed -i $((node_ip_lineNum + 1))$sed_delete_directive /etc/systemd/system/k3s.service
-	sed -i "$node_ip_lineNum $sed_append_directive\        '$EXTERNAL_IP' \\\\" /etc/systemd/system/k3s.service | cat -e
-
-	echo "Validating changes..."
-	validation_res=$(grep -n $EXTERNAL_IP /etc/systemd/system/k3s.service| cut -d: -f1)
-	if [ $validation_res -gt 0 ]; then
-	 echo -e "Assigning new IP\033[32m $EXTERNAL_IP\033[0m validated."
+	validation_res=$(grep -n 'node-external-ip' /etc/systemd/system/k3s.service| cut -d: -f1)
+	if [[ -z "$validation_res" ]]; then
+		echo "Skipped! node-external-ip not found."
 	else
-	 echo "Opps! Updating new IP failed.Please try again!"
+		echo "Locating the node-external-ip line in k3s.service file..."
+		node_ip_lineNum=$(grep -n "node-external-ip" /etc/systemd/system/k3s.service| cut -d: -f1)
+
+		echo "Updating..."
+		sed_delete_directive=d
+		sed_append_directive=a
+		sed -i $((node_ip_lineNum + 1))$sed_delete_directive /etc/systemd/system/k3s.service
+		sed -i "$node_ip_lineNum $sed_append_directive\        '$EXTERNAL_IP' \\\\" /etc/systemd/system/k3s.service | cat -e
+
+		echo "Validating changes..."
+		validation_res=$(grep -n $EXTERNAL_IP /etc/systemd/system/k3s.service| cut -d: -f1)
+		if [ $validation_res -gt 0 ]; then
+		 echo -e "Validated..."
+		else
+		 echo "Opps! Updating new IP failed.Please try again!"
+		fi
 	fi
-	
 	echo "Starting k3s service..."
 	systemctl daemon-reload
 	systemctl start k3s.service
